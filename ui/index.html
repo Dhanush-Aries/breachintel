@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BreachIntel — All-Source Intelligence Terminal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'"/>
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Newsreader:wght@500&family=Inter:wght@400;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet"/></noscript>
+  <link rel="stylesheet" href="vendor/leaflet.css"/>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body data-theme="dark">
+
+<div class="app" id="app">
+
+  <!-- Sidebar navigation -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <span class="logo-mark" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <circle cx="12" cy="12" r="9.5"/>
+          <path d="M12 2.5a15 15 0 0 1 4 9.5 15 15 0 0 1-4 9.5 15 15 0 0 1-4-9.5 15 15 0 0 1 4-9.5z"/>
+          <path d="M2.5 12h19"/>
+        </svg>
+      </span>
+      <span class="logo-word nav-label">Breach<span class="logo-accent">Intel</span></span>
+    </div>
+    <nav class="sidenav">
+      <button class="nav-tab active" data-page="op"      onclick="showPage('op')"><span class="nav-ico">⬢</span><span class="nav-label">Operation</span></button>
+      <button class="nav-tab"        data-page="breach"  onclick="showPage('breach')"><span class="nav-ico">🔓</span><span class="nav-label">Breach Intel</span></button>
+      <button class="nav-tab"        data-page="website" onclick="showPage('website')"><span class="nav-ico">🌐</span><span class="nav-label">Website Info</span></button>
+      <button class="nav-tab"        data-page="osint"   onclick="showPage('osint')"><span class="nav-ico">🕵️</span><span class="nav-label">OSINT</span></button>
+      <button class="nav-tab"        data-page="intel"   onclick="showPage('intel')"><span class="nav-ico">⊞</span><span class="nav-label">Intel Modules</span></button>
+      <button class="nav-tab"        data-page="reconplus" onclick="showPage('reconplus')"><span class="nav-ico">⚔</span><span class="nav-label">Recon+</span></button>
+      <button class="nav-tab"        data-page="ransom"  onclick="showPage('ransom')"><span class="nav-ico">☠</span><span class="nav-label">Ransomware</span></button>
+      <button class="nav-tab"        data-page="scrape"  onclick="showPage('scrape')"><span class="nav-ico">🔴</span><span class="nav-label">Scrape</span></button>
+      <button class="nav-tab"        data-page="news"    onclick="showPage('news')"><span class="nav-ico">📰</span><span class="nav-label">News</span></button>
+      <button class="nav-tab"        data-page="radar"   onclick="showPage('radar')"><span class="nav-ico">📡</span><span class="nav-label">Radar</span></button>
+    </nav>
+    <div class="sidebar-foot">
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme"><span id="theme-ico">☾</span></button>
+      <span class="status-pill"><span class="status-dot" id="status-dot"></span><span class="status-text nav-label" id="status-text">Ready</span></span>
+    </div>
+  </aside>
+
+  <!-- Main area -->
+  <div class="main-wrap">
+    <header class="topbar">
+      <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">☰</button>
+      <div class="search-box">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="search-input" placeholder="enter a website — e.g. sony.com — then explore every tab"
+               onkeydown="if(event.key==='Enter') startScan()" autocomplete="off" spellcheck="false"/>
+        <label class="forum-toggle"><input type="checkbox" id="forums-check"/><span>Forums &amp; Tor</span></label>
+        <button class="btn-scan" id="scan-btn" onclick="startScan()">
+          <span id="scan-label">Scan</span><span id="scan-spinner" class="spinner hidden"></span>
+        </button>
+      </div>
+      <button class="topbar-btn" id="report-btn" onclick="generateReport()" title="Download a full intelligence report">📄 Report</button>
+      <button class="topbar-btn" id="history-btn" onclick="toggleHistory()" title="Scan history">🕑 History</button>
+      <div class="history-pop hidden" id="history-pop"></div>
+    </header>
+    <div class="recent hidden" id="recent"></div>
+    <div class="error-banner hidden" id="error-banner"></div>
+
+  <!-- ════════ PAGE: BREACH INTEL ════════ -->
+  <main class="page hidden" id="page-breach">
+    <div class="page-empty" id="breach-empty">
+      <div class="pe-icon">🔓</div>
+      <h2>Breach &amp; Ransomware Intelligence</h2>
+      <p>Enter a website above and hit <b>Scan</b> to trace breaches, leaks, ransomware listings, infostealer infections, exposed credentials and dark-web exposure — with an exposure score and takedown contacts.</p>
+    </div>
+    <div class="page-body hidden" id="breach-body">
+      <div class="verdict" id="verdict"></div>
+      <div class="summary-bar" id="summary-bar">
+        <div class="summary-left">
+          <span class="summary-domain" id="summary-domain"></span>
+          <span class="summary-ip" id="summary-ip"></span>
+        </div>
+        <div class="summary-stats" id="summary-stats"></div>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">FILTER:</span>
+        <button class="filter-btn active" data-sev="all" onclick="filterSev('all',this)">ALL</button>
+        <button class="filter-btn critical" data-sev="critical" onclick="filterSev('critical',this)">CRITICAL</button>
+        <button class="filter-btn high" data-sev="high" onclick="filterSev('high',this)">HIGH</button>
+        <button class="filter-btn medium" data-sev="medium" onclick="filterSev('medium',this)">MEDIUM</button>
+        <button class="filter-btn low" data-sev="low" onclick="filterSev('low',this)">LOW</button>
+        <button class="filter-btn" data-cat="news" onclick="filterCat('news',this)" style="border-color:rgba(100,160,255,.3);color:#88bbff">NEWS</button>
+        <button class="btn-export" onclick="exportJSON()">⬇ JSON</button>
+      </div>
+      <div class="takedown-section" id="takedown-section">
+        <div class="takedown-head">
+          <div class="section-label" style="margin:0;border-color:var(--critical)">⚠ TAKEDOWN INTELLIGENCE — WHERE IT IS HOSTED &amp; WHO TO CONTACT</div>
+          <div class="takedown-actions">
+            <button class="btn-takedown" id="btn-takedown" onclick="runTakedown()">
+              <span id="td-label">▸ TRACE HOSTING &amp; ABUSE CONTACTS</span>
+              <span id="td-spinner" class="spinner hidden"></span>
+            </button>
+            <button class="btn-export hidden" id="btn-report" onclick="downloadReport()">⬇ TAKEDOWN DOSSIER</button>
+          </div>
+        </div>
+        <p class="td-hint" id="td-hint">Resolves every leak/forum/dark-web host → IP, country, network owner, and the verified abuse email to send a takedown request to.</p>
+        <div class="takedown-grid hidden" id="takedown-grid"></div>
+      </div>
+      <div class="section-label" style="margin:24px 0 12px">INTELLIGENCE REPORT</div>
+      <div class="findings-grid" id="findings-grid"></div>
+      <div class="subs-section hidden" id="subs-section">
+        <div class="section-label">ATTACK SURFACE — crt.sh SUBDOMAINS</div>
+        <div class="subs-wrap" id="subs-wrap"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ════════ PAGE: 10-PHASE OPERATION ════════ -->
+  <main class="page" id="page-op">
+    <div class="op-banner">CLASSIFICATION: UNCLASSIFIED // FOR AUTHORIZED ASSESSMENT ONLY</div>
+    <div class="op-head">
+      <div>
+        <div class="op-title">10-PHASE INTELLIGENCE OPERATION</div>
+        <div class="op-target" id="op-target">▸ NO TARGET DESIGNATED — enter a domain above</div>
+      </div>
+      <button class="btn-op" id="btn-op" onclick="runOperation()"><span id="op-label">▶ EXECUTE OPERATION</span><span id="op-spinner" class="spinner hidden"></span></button>
+    </div>
+    <div class="op-progress"><div class="op-progress-bar" id="op-bar"></div></div>
+    <div class="op-grid" id="op-grid"></div>
+    <div class="op-attack" id="op-attack"></div>
+  </main>
+
+  <!-- ════════ PAGE: WEBSITE INFO ════════ -->
+  <main class="page hidden" id="page-website">
+    <div class="recon-head">
+      <div class="section-label" style="margin:0">🌐 FULL WEBSITE INFORMATION — TECHNICAL RECON</div>
+      <button class="btn-vuln" id="btn-vuln" onclick="runVulnScan()"><span id="vuln-label">⚡ Run Vulnerability Scan (nuclei)</span><span id="vuln-spinner" class="spinner hidden"></span></button>
+    </div>
+    <p class="recon-hint">IP/ASN profile · open ports (nmap) · web fingerprint · WAF · DNS · HTTP security headers · technology stack — fused from the local Kali arsenal.</p>
+    <div class="recon-status" id="website-status"></div>
+    <div class="osint-grid" id="website-grid"></div>
+    <div class="vuln-section hidden" id="vuln-section">
+      <div class="section-label">VULNERABILITY FINDINGS — nuclei</div>
+      <div class="findings-grid" id="vuln-grid"></div>
+    </div>
+  </main>
+
+  <!-- ════════ PAGE: OSINT ════════ -->
+  <main class="page hidden" id="page-osint">
+    <div class="recon-head">
+      <div class="section-label" style="margin:0">🕵️ OSINT DOSSIER — PEOPLE, DOMAINS &amp; FOOTPRINT</div>
+      <div class="osint-actions">
+        <input id="osint-username" class="osint-user" placeholder="optional: username / handle" autocomplete="off" spellcheck="false"/>
+        <button class="btn-osint" id="btn-osint" onclick="runOsint(true)"><span id="osint-label">↻ Re-run with username</span><span id="osint-spinner" class="spinner hidden"></span></button>
+      </div>
+    </div>
+    <p class="recon-hint">WHOIS &amp; registration · subdomains (subfinder + crt.sh + HackerTarget) · harvested emails · reverse-IP neighbours · username footprint (Sherlock) — visualised as an intelligence mindmap.</p>
+    <div class="recon-status" id="osint-status"></div>
+    <div class="mindmap-section hidden" id="mindmap-section">
+      <div class="section-label">🧠 INTELLIGENCE MINDMAP</div>
+      <div id="mindmap"></div>
+      <p class="mm-hint">drag nodes · scroll to zoom · click a node to open</p>
+    </div>
+    <div class="osint-grid" id="osint-grid"></div>
+  </main>
+
+  <!-- ════════ PAGE: INTEL MODULES ════════ -->
+  <main class="page hidden" id="page-intel">
+    <div class="recon-head">
+      <div class="section-label" style="margin:0">⊞ 10 ADVANCED INTELLIGENCE MODULES</div>
+      <button class="btn-op" id="btn-intel" onclick="runIntel()"><span id="intel-label">▶ RUN 10 MODULES</span><span id="intel-spinner" class="spinner hidden"></span></button>
+    </div>
+    <p class="recon-hint">Capabilities most tools don't have — Shodan footprint across the entire IP estate, passive CVE inventory, email-security grade, ASN bad-neighborhood scoring, typosquat phishing-triage, exposure timeline, credential index, attack-surface index, breach data-class breakdown, and a since-last-scan monitoring diff.</p>
+    <div class="recon-status" id="intel-status"></div>
+    <div class="osint-grid" id="intel-grid"></div>
+  </main>
+
+  <!-- ════════ PAGE: RECON+ (advanced offensive recon) ════════ -->
+  <main class="page hidden" id="page-reconplus">
+    <div class="recon-head">
+      <div class="section-label" style="margin:0">⚔ ADVANCED RECON — OFFENSIVE SURFACE</div>
+      <button class="btn-op" id="btn-reconplus" onclick="runReconPlus()"><span id="rp-label">▶ RUN ADVANCED RECON</span><span id="rp-spinner" class="spinner hidden"></span></button>
+    </div>
+    <p class="recon-hint">Subdomain-takeover detection (can-i-take-over-xyz) · cloud bucket discovery (S3/GCS/Azure) · full Shodan host intel via the key pool (products, CVEs, banners) · live endpoint &amp; JS crawl (katana).</p>
+    <div class="recon-status" id="rp-status"></div>
+    <div class="osint-grid" id="reconplus-grid"></div>
+  </main>
+
+  <!-- ════════ PAGE: RANSOMWARE ════════ -->
+  <main class="page hidden" id="page-ransom">
+    <div class="recon-head">
+      <div class="section-label" style="margin:0">☠ RANSOMWARE INTELLIGENCE — live ransomlook.io mirror</div>
+      <button class="sky-btn" onclick="loadRansom(true)">↻ Refresh</button>
+    </div>
+    <div class="ransom-stats" id="ransom-stats"></div>
+    <div class="section-label" style="margin:18px 0 10px">🩸 RECENT VICTIM POSTS</div>
+    <div class="ransom-feed" id="ransom-recent"><div class="osint-empty">loading live feed…</div></div>
+    <div class="rg-layout">
+      <div>
+        <div class="section-label" style="margin:18px 0 10px">☠ GROUPS <span id="rg-count" class="oc-count"></span></div>
+        <input class="osint-user" id="rg-search" placeholder="filter groups…" oninput="filterRansomList('group')" style="width:100%;margin-bottom:8px"/>
+        <div class="chip-wrap" id="ransom-groups" style="max-height:340px"></div>
+      </div>
+      <div>
+        <div class="section-label" style="margin:18px 0 10px">🛒 MARKETS <span id="rm-count" class="oc-count"></span></div>
+        <input class="osint-user" id="rm-search" placeholder="filter markets…" oninput="filterRansomList('market')" style="width:100%;margin-bottom:8px"/>
+        <div class="chip-wrap" id="ransom-markets" style="max-height:340px"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ════════ PAGE: SCRAPE (live publish monitor) ════════ -->
+  <main class="page hidden" id="page-scrape">
+    <div class="recon-head">
+      <div class="section-label" style="margin:0">🔴 LIVE SCRAPE — new posts the moment a group publishes</div>
+      <span class="sky-status" id="scrape-status"><span class="ticker-pulse"></span> monitoring…</span>
+    </div>
+    <p class="recon-hint">Polls the ransomlook live feed every 30s and surfaces every NEW publication — which group posted, the victim, and the timestamp — flashing each new entry as it lands.</p>
+    <div class="scrape-feed" id="scrape-feed"><div class="osint-empty">starting monitor…</div></div>
+  </main>
+
+  <!-- ════════ PAGE: NEWS & FORUMS ════════ -->
+  <main class="page hidden" id="page-news">
+    <div class="news-layout">
+      <div class="news-main">
+        <div class="recon-head">
+          <div class="section-label" style="margin:0">📰 HACKING &amp; BREACH NEWS</div>
+          <button class="sky-btn" onclick="loadNews(true)">↻ Refresh</button>
+        </div>
+        <div class="news-list" id="news-list"><div class="osint-empty">loading latest security news…</div></div>
+      </div>
+      <aside class="news-side">
+        <div class="side-head">🛰 FORUM STATUS <span id="forum-online-count"></span></div>
+        <div class="forum-status" id="forum-status"><div class="osint-empty">checking forum liveness…</div></div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- ════════ PAGE: LIVE RADAR ════════ -->
+  <main class="page hidden" id="page-radar">
+    <div class="livemap-head">
+      <div class="section-label" style="margin:0">📡 GLOBAL LIVE RADAR</div>
+      <div class="sky-controls">
+        <button class="sky-btn threat" id="sky-threat" onclick="toggleThreats()">⚡ Live Threats</button>
+        <button class="sky-btn" id="sky-air" onclick="toggleAircraft()">✈ Aircraft</button>
+        <button class="sky-btn" id="sky-sat" onclick="toggleSatellites()">🛰 Satellites</button>
+        <button class="sky-btn" id="sky-cam" onclick="toggleCams()">📷 Public Cams</button>
+        <button class="sky-btn" id="sky-satview" onclick="toggleSatelliteView()">🛰 Satellite View</button>
+        <button class="sky-btn" id="sky-3d" onclick="toggle3DGlobe()">🌐 3D Globe</button>
+        <span class="sky-status" id="sky-status">live ADS-B · orbital · threat · cam tracking</span>
+      </div>
+    </div>
+    <div id="globe-3d" class="hidden"></div>
+    <div class="geo-bar">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input id="geo-search" class="geo-input" placeholder="search a location — e.g. Times Square, New York — or click the map" onkeydown="if(event.key==='Enter') searchLocation()" autocomplete="off"/>
+      <input id="geo-radius" class="geo-radius" type="number" value="100" min="50" max="50000" title="radius in metres"/>
+      <span class="geo-unit">m</span>
+      <button class="sky-btn geo-go" onclick="searchLocation()">🎯 Geo Recon</button>
+    </div>
+    <div id="world-map"></div>
+    <div class="map-legend" id="map-legend"></div>
+    <div class="threat-ticker hidden" id="threat-ticker">
+      <div class="ticker-head">
+        <span class="ticker-title"><span class="ticker-pulse"></span> LIVE THREAT FEED</span>
+        <span class="ticker-meta" id="ticker-meta"></span>
+      </div>
+      <div class="ticker-body" id="ticker-body"></div>
+    </div>
+  </main>
+
+  </div><!-- /main-wrap -->
+  </div><!-- /app -->
+
+  <script src="vendor/leaflet.js" defer></script>
+  <script src="vendor/satellite.min.js" defer></script>
+  <script src="vendor/vis-network.min.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
